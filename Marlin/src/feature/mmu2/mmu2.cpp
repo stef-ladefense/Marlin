@@ -30,7 +30,7 @@
 MMU2 mmu2;
 
 #include "../../gcode/gcode.h"
-#include "../../lcd/ultralcd.h"
+#include "../../lcd/marlinui.h"
 #include "../../libs/buzzer.h"
 #include "../../libs/nozzle.h"
 #include "../../module/temperature.h"
@@ -163,7 +163,7 @@ uint8_t MMU2::get_current_tool() {
 }
 
 #if EITHER(PRUSA_MMU2_S_MODE, MMU_EXTRUDER_SENSOR)
-  #define FILAMENT_PRESENT() (READ(FIL_RUNOUT_PIN) != FIL_RUNOUT_STATE)
+  #define FILAMENT_PRESENT() (READ(FIL_RUNOUT1_PIN) != FIL_RUNOUT1_STATE)
 #endif
 
 void MMU2::mmu_loop() {
@@ -340,17 +340,17 @@ void MMU2::mmu_loop() {
       #endif
 
       if (rx_ok()) {
-        // response to C0 mmu command in PRUSA_MMU2_S_MODE
+        // Response to C0 mmu command in PRUSA_MMU2_S_MODE
         bool can_reset = true;
-        if (ENABLED(PRUSA_MMU2_S_MODE) && last_cmd == MMU_CMD_C0) {
-          if (!mmu2s_triggered) {
+        #if ENABLED(PRUSA_MMU2_S_MODE)
+          if (!mmu2s_triggered && last_cmd == MMU_CMD_C0) {
             can_reset = false;
             // MMU ok received but filament sensor not triggered, retrying...
             DEBUG_ECHOLNPGM("MMU => 'ok' (filament not present in gears)");
             DEBUG_ECHOLNPGM("MMU <= 'C0' (keep trying)");
             MMU2_COMMAND("C0");
           }
-        }
+        #endif
         if (can_reset) {
           DEBUG_ECHOLNPGM("MMU => 'ok'");
           ready = true;
